@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pacman Clone</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 2px solid white;
+        }
+        .info {
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-over-text"></div>
+    <div class="info">
+        <span>Time: <span id="timer">0</span> s</span> | 
+        <span>Score: <span id="score">0</span></span>
+        <span>Sisa: <span id="sisa_dot">0</span></span>
+    </div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const timerElement = document.getElementById("timer");
+        const scoreElement = document.getElementById("score");
+        
+        let time = 0;
+        let score = 0;
+        setInterval(() => {
+            time++;
+            timerElement.textContent = time;
+        }, 1000);
+        
+        const tileSize = 20;
+        const cols = canvas.width / tileSize;
+        const rows = canvas.height / tileSize;
+        const target_time = 5; //  5second
+        
+        const pacman = {
+            x: tileSize,
+            y: tileSize,
+            dx: 0,
+            dy: 0,
+            size: tileSize / 2
+        };
+    
+        function drawPacman() {
+            ctx.fillStyle = "yellow";
+            ctx.beginPath();
+            // linkaran
+            ctx.arc(pacman.x + tileSize / 2, pacman.y + tileSize / 2, pacman.size, 0.2 * Math.PI, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        const maze = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+            [1,0,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+            [1,0,1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+            [1,0,0,0,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1],
+            [1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,0,1],
+            [1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+            [1,0,1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+            [1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+        
+        function drawMaze() {
+            let total_dot = 0;
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if (maze[row] && maze[row][col] === 1) {
+                        ctx.fillStyle = "blue";
+                        ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+                    } else if (maze[row][col] === 0) {
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(col * tileSize + tileSize/3, row * tileSize + tileSize/3, tileSize/3, tileSize/3);
+                        total_dot++;
+                    } else if (maze[row][col] === 2) {
+                        ctx.fillStyle = "black";
+                        ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+            document.getElementById("sisa_dot").textContent = total_dot;
+        }
+                    
+        function update() {
+                        
+            // total 0 di maze
+            let dot = 0;
+            // hitung di array maze
+            for (let nol = 0; nol < maze.length; nol++) {
+                for (let nol2 = 0; nol2 < maze[nol].length; nol2++) {
+                    if (maze[nol][nol2] === 0 || maze[nol][nol2] === 2) {
+                        dot++;
+                    }
+                }
+            }
+            // if all row white done 
+            if (score === 10) {
+                // catat waktu
+                let waktu = time;
+                // if game-over-text is empty
+                if (document.getElementById("game-over-text").textContent === "") {
+                    // alert game over withot button ok
+                    document.getElementById("game-over-text").textContent = "Finish!";
+                    // break line and show Final Score: " + score + " | Time: " + waktu + " s
+                    document.getElementById("game-over-text").innerHTML += "<br>Final Score: " + score + " | Time: " + waktu + " s";
+                    // style game over
+                    if(waktu <= target_time) {
+                        document.getElementById("game-over-text").style.color = "#5fff5f";
+                    } else {
+                        document.getElementById("game-over-text").style.color = "red";
+                    }
+                    document.getElementById("game-over-text").style.fontSize = "30px";
+                    // mrgin bottom
+                    document.getElementById("game-over-text").style.marginBottom = "10px";
+                    // text center
+                    document.getElementById("game-over-text").style.textAlign = "center";
+                }
+                // stop game
+                return false;
+            }
+
+            let newX = pacman.x + pacman.dx;
+            let newY = pacman.y + pacman.dy;
+            let col = Math.floor(newX / tileSize);
+            let row = Math.floor(newY / tileSize);
+            
+            if (maze[row] && maze[row][col] === 0 || maze[row][col] === 2) {
+                if(maze[row][col] === 0 ) {
+                    score++;
+                }
+                pacman.x = newX;
+                pacman.y = newY;
+                maze[row][col] = 2;
+                scoreElement.textContent = score;
+            }
+
+        }
+        
+        function gameLoop() {
+            var speed = 10; // semakin kebawah semakin cepat
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMaze();
+            update();
+            drawPacman();
+            setTimeout(() => requestAnimationFrame(gameLoop),speed);
+        }
+        
+        document.addEventListener("keydown", (event) => {
+            switch (event.key) {
+                case "ArrowUp": pacman.dx = 0; pacman.dy = -tileSize / 4; break;
+                case "ArrowDown": pacman.dx = 0; pacman.dy = tileSize / 4; break;
+                case "ArrowLeft": pacman.dx = -tileSize / 4; pacman.dy = 0; break;
+                case "ArrowRight": pacman.dx = tileSize / 4; pacman.dy = 0; break;
+                
+            }
+        });
+        
+        gameLoop();
+    </script>
+</body>
+</html>
